@@ -51,19 +51,26 @@ def send_notice(kind, fields):
     
     if TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID:
         try:
-            requests.post(
+            print("正在尝试发送 Telegram 通知...")
+            
+            # 如果配置了 PROXY_URL，就让 TG 也走代理；否则直连
+            proxies_config = {"http": PROXY_URL, "https": PROXY_URL} if PROXY_URL else None
+            
+            response = requests.post(
                 f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage",
                 data={"chat_id": TELEGRAM_CHAT_ID, "text": msg, "parse_mode": "HTML"},
-                proxies={"http": None, "https": None}, # <-- 只需要加这一行，强制直连
-                timeout=10 # 稍微增加超时防止网络卡顿
+                proxies=proxies_config, 
+                timeout=15 # 稍微增加超时时间
             )
-        except: pass
-
-    try:
-        md = msg.replace("<b>", "**").replace("</b>", "**").replace("<code>", "`").replace("</code>", "`")
-        with open("README.md", "w", encoding="utf-8") as f:
-            f.write(f"# GreatHost 自动续期状态\n\n{md}\n\n> 最近更新: {now_shanghai()}")
-    except: pass
+            
+            # 检查 HTTP 状态码，如果不是 200 就抛出异常并打印详细信息
+            if response.status_code != 200:
+                print(f"❌ TG 发送失败! 状态码: {response.status_code}, 详情: {response.text}")
+            else:
+                print("✅ TG 通知发送成功")
+                
+        except Exception as e:
+            print(f"❌ TG 发送发生网络或代码异常: {e}")
 
 class GH:
     def __init__(self):
