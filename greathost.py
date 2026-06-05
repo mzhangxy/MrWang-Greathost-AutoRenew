@@ -83,7 +83,31 @@ class GH:
 
     def api(self, url, method="GET"):
         print(f"📡 API 调用 [{method}] {url}")
-        script = f"return fetch('{url}',{{method:'{method}'}}).then(r=>r.json()).catch(e=>({{success:false,message:e.toString()}}))"
+        # 增加对非 JSON 响应的兼容和原始文本抓取
+        script = f"""
+        return fetch('{url}', {{
+            method: '{method}',
+            headers: {{
+                'Accept': 'application/json, text/plain, */*',
+                'Content-Type': 'application/json'
+            }}
+        }})
+        .then(async r => {{
+            const text = await r.text();
+            try {{
+                return JSON.parse(text);
+            }} catch(e) {{
+                // 如果解析 JSON 失败，返回前 500 个字符的纯文本以便排错
+                return {{
+                    success: false, 
+                    message: "JSON解析失败", 
+                    raw_response: text.substring(0, 500),
+                    status: r.status
+                }};
+            }}
+        }})
+        .catch(e => ({{success: false, message: e.toString()}}))
+        """
         return self.d.execute_script(script)
 
     def get_ip(self):
