@@ -8,6 +8,8 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.chrome.service import Service as ChromeService
+from webdriver_manager.chrome import ChromeDriverManager
 
 EMAIL = os.getenv("GREATHOST_EMAIL", "")
 PASSWORD = os.getenv("GREATHOST_PASSWORD", "")
@@ -78,7 +80,9 @@ class GH:
         opts.add_argument("--headless=new")
         opts.add_argument("--no-sandbox")
         proxy = {'proxy': {'http': PROXY_URL, 'https': PROXY_URL}} if PROXY_URL else None
-        self.d = webdriver.Chrome(options=opts, seleniumwire_options=proxy)
+        service = ChromeService(ChromeDriverManager().install())
+        self.d = webdriver.Chrome(service=service, options=opts, seleniumwire_options=proxy)
+        #self.d = webdriver.Chrome(options=opts, seleniumwire_options=proxy)
         self.w = WebDriverWait(self.d, 25)
 
     def api(self, url, method="GET"):
